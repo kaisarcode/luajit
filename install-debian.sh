@@ -1,6 +1,9 @@
 #!/bin/bash
-# install-debian - Install the Debian build dependencies for this repository.
-# License: GNU GPL v3
+# Install Debian Dependencies
+# Summary: Install the Debian build dependencies for this repository.
+# Author:  KaisarCode
+# Website: https://kaisarcode.com
+# License: GNU General Public License v3.0
 
 set -Eeuo pipefail
 
