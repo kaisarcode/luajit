@@ -1,6 +1,6 @@
 # LuaJIT Runtime Distribution
 
-This repository builds precompiled, ready-to-download LuaJIT runtimes for the supported KaisarCode target matrix. Consumers download a target directory and run LuaJIT directly; they do not need LuaJIT source, a compiler, Make, CMake, or a target toolchain.
+This repository precompiles LuaJIT for a wide range of targets.
 
 ## Prerequisite
 
@@ -17,8 +17,6 @@ Supported targets are:
 - `aarch64/linux`, `aarch64/android`, `aarch64/macos`, `aarch64/ios`, `aarch64/iossim`
 - `armv7/linux`, `armv7/android`, `armv7hf/linux`
 - `mips/linux`, `mipsel/linux`, `mips64el/linux`
-
-The project uses the cross compilers, Android NDK, and osxcross SDKs already available in the KaisarCode environment. A target that lacks a usable toolchain or the required 32-bit host compiler support fails with its concrete cause and does not remove already published targets.
 
 ## Outputs
 
