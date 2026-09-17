@@ -1,7 +1,6 @@
 ## Makefile
 ## Summary: Builds and publishes isolated LuaJIT runtime targets.
 ##
-## Author: KaisarCode
 ## License: GNU GPL v3
 
 LUAJIT_DIR ?=
