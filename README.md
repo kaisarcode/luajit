@@ -28,6 +28,12 @@ Android builds require Android NDK `27.2.12479018`, including its LLVM toolchain
 
 macOS and iOS builds require an osxcross installation with the relevant macOS, iPhoneOS, and iPhoneSimulator SDKs. Set `OSXCROSS_ROOT` to its target directory, or install it at the default `XDG_DATA_HOME/osxcross/target` path. The installation must provide `o64-clang`, `oa64-clang`, `iossimx64-clang`, `ios64-clang`, `iossim64-clang`, `x86_64-apple-darwin25.1-ar`, `aarch64-apple-darwin25.1-ar`, and `ios-ar` under `bin/`.
 
+For Debian, [`install-debian.sh`](install-debian.sh) installs precisely the dependencies needed by `make all`, including the Android NDK, osxcross, and the Apple SDKs. It requires network access and `sudo`:
+
+```sh
+./install-debian.sh
+```
+
 ## Build
 
 Run `make all` to build every supported target, or use an individual target such as `make x86_64/linux`.
