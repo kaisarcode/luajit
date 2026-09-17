@@ -55,7 +55,16 @@ define build_target
 	executable=luajit; if [ "$$platform" = windows ]; then executable=luajit.exe; fi; \
 	[ -f "$$source/src/$$executable" ] || { echo "missing LuaJIT executable for $$arch/$$platform" >&2; exit 1; }; \
 	cp -a "$$source/src/$$executable" "$$destination/$$executable"; \
-	find "$$source/src" -maxdepth 1 \( -type f -o -type l \) \( -name 'libluajit-5.1.so*' -o -name 'libluajit-5.1.*.dylib' -o -name 'lua51.dll' \) -exec cp -L {} "$$destination/" \;; \
+	find "$$source/src" -maxdepth 1 \( -type f -o -type l \) \( -name 'libluajit.so*' -o -name 'libluajit.dylib' -o -name 'libluajit.dll' -o -name 'libluajit.dll.a' \) -exec cp -L {} "$$destination/" \;; \
+	case "$$platform" in \
+		windows) \
+			[ -f "$$destination/libluajit.dll" ] || { echo "missing LuaJIT shared runtime for $$arch/$$platform" >&2; exit 1; }; \
+			[ -f "$$destination/libluajit.dll.a" ] || { echo "missing LuaJIT import library for $$arch/$$platform" >&2; exit 1; } ;; \
+		macos|ios|iossim) \
+			[ -f "$$destination/libluajit.dylib" ] || { echo "missing LuaJIT shared runtime for $$arch/$$platform" >&2; exit 1; } ;; \
+		*) \
+			[ -f "$$destination/libluajit.so" ] || { echo "missing LuaJIT shared runtime for $$arch/$$platform" >&2; exit 1; } ;; \
+	esac; \
 	find "$$source/src/jit" -maxdepth 1 -type f -name '*.lua' -exec cp -a {} "$$destination/jit/" \;; \
 	printf 'OK %s/%s\n' "$$arch" "$$platform"
 endef
@@ -93,10 +102,10 @@ mips64el/linux:
 	$(call with_target_args,mips64el,linux,gcc,TARGET_SYS=Linux CROSS=mips64el-linux-gnuabi64- TARGET_CFLAGS='-mips64r2 -mabi=64')
 
 x86_64/windows:
-	$(call with_target_args,x86_64,windows,gcc,TARGET_SYS=Windows CROSS=x86_64-w64-mingw32-)
+	$(call with_target_args,x86_64,windows,gcc,TARGET_SYS=Windows CROSS=x86_64-w64-mingw32- TARGET_DLLNAME=libluajit.dll TARGET_DLLDOTANAME=libluajit.dll.a)
 
 i686/windows:
-	$(call with_target_args,i686,windows,i686-linux-gnu-gcc -static,TARGET_SYS=Windows CROSS=i686-w64-mingw32-)
+	$(call with_target_args,i686,windows,i686-linux-gnu-gcc -static,TARGET_SYS=Windows CROSS=i686-w64-mingw32- TARGET_DLLNAME=libluajit.dll TARGET_DLLDOTANAME=libluajit.dll.a)
 
 aarch64/android:
 	$(call with_target_args,aarch64,android,gcc,TARGET_SYS=Linux CROSS=$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android- STATIC_CC=$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang DYNAMIC_CC='$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang -fPIC' TARGET_LD=$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang TARGET_AR='$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar rcus' TARGET_STRIP=$(ANDROID_NDK_ROOT)/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip)
@@ -111,7 +120,7 @@ x86_64/macos:
 	OSXCROSS_HOST=x86_64-apple-darwin25.1 OSXCROSS_TARGET_DIR='$(OSXCROSS_ROOT)' OSXCROSS_TARGET=darwin25.1 OSXCROSS_SDK="$$sdk" LD_LIBRARY_PATH='$(OSXCROSS_ROOT)/lib'"$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" PATH='$(OSXCROSS_ROOT)/bin':"$$PATH" $(MAKE) --no-print-directory LUAJIT_DIR='$(LUAJIT_DIR)' x86_64/macos-build
 
 x86_64/macos-build:
-	$(call with_target_args,x86_64,macos,gcc,BUILDMODE=dynamic TARGET_SYS=Darwin CC=$(OSXCROSS_ROOT)/bin/o64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/o64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/o64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/x86_64-apple-darwin25.1-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch x86_64' TARGET_LIBPATH=@loader_path TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit-5.1.2.dylib)
+	$(call with_target_args,x86_64,macos,gcc,BUILDMODE=dynamic TARGET_SYS=Darwin CC=$(OSXCROSS_ROOT)/bin/o64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/o64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/o64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/x86_64-apple-darwin25.1-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch x86_64' TARGET_LIBPATH=@loader_path TARGET_DYLIBNAME=libluajit.dylib TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit.dylib)
 
 aarch64/macos:
 	@set -eu; \
@@ -120,7 +129,7 @@ aarch64/macos:
 	OSXCROSS_HOST=aarch64-apple-darwin25.1 OSXCROSS_TARGET_DIR='$(OSXCROSS_ROOT)' OSXCROSS_TARGET=darwin25.1 OSXCROSS_SDK="$$sdk" LD_LIBRARY_PATH='$(OSXCROSS_ROOT)/lib'"$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" PATH='$(OSXCROSS_ROOT)/bin':"$$PATH" $(MAKE) --no-print-directory LUAJIT_DIR='$(LUAJIT_DIR)' aarch64/macos-build
 
 aarch64/macos-build:
-	$(call with_target_args,aarch64,macos,gcc,BUILDMODE=dynamic TARGET_SYS=Darwin CC=$(OSXCROSS_ROOT)/bin/oa64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/oa64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/oa64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/aarch64-apple-darwin25.1-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch arm64' TARGET_LIBPATH=@loader_path TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit-5.1.2.dylib)
+	$(call with_target_args,aarch64,macos,gcc,BUILDMODE=dynamic TARGET_SYS=Darwin CC=$(OSXCROSS_ROOT)/bin/oa64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/oa64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/oa64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/aarch64-apple-darwin25.1-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch arm64' TARGET_LIBPATH=@loader_path TARGET_DYLIBNAME=libluajit.dylib TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit.dylib)
 
 x86_64/iossim:
 	@set -eu; \
@@ -129,7 +138,7 @@ x86_64/iossim:
 	OSXCROSS_HOST=x86_64-apple-darwin25.1 OSXCROSS_TARGET_DIR='$(OSXCROSS_ROOT)' OSXCROSS_TARGET=darwin25.1 OSXCROSS_SDK="$$sdk" LD_LIBRARY_PATH='$(OSXCROSS_ROOT)/lib'"$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" PATH='$(OSXCROSS_ROOT)/bin':"$$PATH" $(MAKE) --no-print-directory LUAJIT_DIR='$(LUAJIT_DIR)' x86_64/iossim-build
 
 x86_64/iossim-build:
-	$(call with_target_args,x86_64,iossim,gcc,BUILDMODE=dynamic TARGET_SYS=iOS CC=$(OSXCROSS_ROOT)/bin/iossimx64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/iossimx64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/iossimx64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/ios-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch x86_64' TARGET_LIBPATH=@loader_path TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit-5.1.2.dylib)
+	$(call with_target_args,x86_64,iossim,gcc,BUILDMODE=dynamic TARGET_SYS=iOS CC=$(OSXCROSS_ROOT)/bin/iossimx64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/iossimx64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/iossimx64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/ios-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch x86_64' TARGET_LIBPATH=@loader_path TARGET_DYLIBNAME=libluajit.dylib TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit.dylib)
 
 aarch64/ios:
 	@set -eu; \
@@ -138,7 +147,7 @@ aarch64/ios:
 	OSXCROSS_HOST=aarch64-apple-darwin25.1 OSXCROSS_TARGET_DIR='$(OSXCROSS_ROOT)' OSXCROSS_TARGET=darwin25.1 OSXCROSS_SDK="$$sdk" LD_LIBRARY_PATH='$(OSXCROSS_ROOT)/lib'"$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" PATH='$(OSXCROSS_ROOT)/bin':"$$PATH" $(MAKE) --no-print-directory LUAJIT_DIR='$(LUAJIT_DIR)' aarch64/ios-build
 
 aarch64/ios-build:
-	$(call with_target_args,aarch64,ios,gcc,BUILDMODE=dynamic TARGET_SYS=iOS CC=$(OSXCROSS_ROOT)/bin/ios64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/ios64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/ios64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/ios-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch arm64' TARGET_LIBPATH=@loader_path TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit-5.1.2.dylib)
+	$(call with_target_args,aarch64,ios,gcc,BUILDMODE=dynamic TARGET_SYS=iOS CC=$(OSXCROSS_ROOT)/bin/ios64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/ios64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/ios64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/ios-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch arm64' TARGET_LIBPATH=@loader_path TARGET_DYLIBNAME=libluajit.dylib TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit.dylib)
 
 aarch64/iossim:
 	@set -eu; \
@@ -147,7 +156,7 @@ aarch64/iossim:
 	OSXCROSS_HOST=aarch64-apple-darwin25.1 OSXCROSS_TARGET_DIR='$(OSXCROSS_ROOT)' OSXCROSS_TARGET=darwin25.1 OSXCROSS_SDK="$$sdk" LD_LIBRARY_PATH='$(OSXCROSS_ROOT)/lib'"$${LD_LIBRARY_PATH:+:$$LD_LIBRARY_PATH}" PATH='$(OSXCROSS_ROOT)/bin':"$$PATH" $(MAKE) --no-print-directory LUAJIT_DIR='$(LUAJIT_DIR)' aarch64/iossim-build
 
 aarch64/iossim-build:
-	$(call with_target_args,aarch64,iossim,gcc,BUILDMODE=dynamic TARGET_SYS=iOS CC=$(OSXCROSS_ROOT)/bin/iossim64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/iossim64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/iossim64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/ios-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch arm64' TARGET_LIBPATH=@loader_path TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit-5.1.2.dylib)
+	$(call with_target_args,aarch64,iossim,gcc,BUILDMODE=dynamic TARGET_SYS=iOS CC=$(OSXCROSS_ROOT)/bin/iossim64-clang TARGET_CC=$(OSXCROSS_ROOT)/bin/iossim64-clang TARGET_LD=$(OSXCROSS_ROOT)/bin/iossim64-clang TARGET_AR='$(OSXCROSS_ROOT)/bin/ios-ar rcus' TARGET_STRIP=true TARGET_FLAGS='-arch arm64' TARGET_LIBPATH=@loader_path TARGET_DYLIBNAME=libluajit.dylib TARGET_LDFLAGS='-Wl$(comma)-rpath$(comma)@loader_path' LUAJIT_SO=libluajit.dylib)
 
 dist:
 	@set -eu; \

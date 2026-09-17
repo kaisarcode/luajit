@@ -48,8 +48,8 @@ Supported targets are:
 
 ## Outputs
 
-Each build uses `.build/<arch>/<platform>/source/` as an isolated LuaJIT source workspace. `.build/` is ephemeral and can be deleted safely.
+Each build uses `.build/<arch>/<platform>/luajit/` as an isolated LuaJIT source workspace. `.build/` is ephemeral and can be deleted safely.
 
-Published runtime files are written to `dist/<arch>/<platform>/`. Every target includes its LuaJIT executable, runtime shared library where LuaJIT requires one, and the `jit/` Lua modules. `dist/` is fully regenerable and can be deleted safely.
+Published runtime files are written to `dist/<arch>/<platform>/`. Every target includes its LuaJIT executable, `libluajit` shared runtime library with the native platform extension, and the `jit/` Lua modules. Windows targets also include the matching `libluajit.dll.a` import library. `dist/` is fully regenerable and can be deleted safely.
 
 `dist/manifest.json` is generated from the files that are actually staged. `dist/SHA256SUMS` contains SHA-256 entries for every published target file, using paths relative to `dist/`.
