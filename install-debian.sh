@@ -274,10 +274,13 @@ write_ios_wrapper() {
     local target_prefix="$2"
     local target_suffix="$3"
     local sdk_path="$4"
+    local deployment_target
+
+    deployment_target="\${IOS_DEPLOYMENT_TARGET:-$IOS_DEPLOYMENT_TARGET}"
 
     printf '#!/bin/sh\n' > "$wrapper"
-    printf 'exec clang -target %s${IOS_DEPLOYMENT_TARGET:-%s}%s -isysroot %s -fuse-ld=lld "$@"\n' \
-        "$target_prefix" "$IOS_DEPLOYMENT_TARGET" "$target_suffix" "$sdk_path" >> "$wrapper"
+    printf 'exec clang -target %s%s%s -isysroot %s -fuse-ld=lld "$@"\n' \
+        "$target_prefix" "$deployment_target" "$target_suffix" "$sdk_path" >> "$wrapper"
     chmod +x "$wrapper"
 }
 
